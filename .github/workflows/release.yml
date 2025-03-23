@@ -1,10 +1,9 @@
 name: Create Release
 
-# Trigger the workflow on tag push
 on:
   push:
     tags:
-      - 'v*'  # Trigger for tags starting with 'v' (e.g., v1.0.0)
+      - 'v*' 
 
 jobs:
   release:
@@ -46,6 +45,6 @@ jobs:
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
-        files: release_files/**/*  # Use the files collected in the previous step
+        files: release_files/**/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
