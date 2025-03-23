@@ -1,9 +1,9 @@
-name: Create Release
+name: Create or Update Release
 
 on:
   push:
-    tags:
-      - 'v*' 
+    branches:
+      - 'main'
 
 jobs:
   release:
@@ -13,26 +13,27 @@ jobs:
     - name: Checkout the repository
       uses: actions/checkout@v2
 
-    - name: Get the version from the tag
+    - name: Get the current commit hash and version
       id: version
-      run: echo "VERSION=$(echo ${GITHUB_REF} | sed 's/refs\/tags\///')" >> $GITHUB_ENV
+      run: |
+        echo "COMMIT_SHA=${GITHUB_SHA}" >> $GITHUB_ENV
+        echo "TAG_NAME=v$(date +'%Y%m%d%H%M%S')" >> $GITHUB_ENV  # Use a unique version for each commit, or customize as needed
+        echo "VERSION=${TAG_NAME}" >> $GITHUB_ENV  # Version is based on a dynamic tag, can be customized
 
     - name: List files changed in the commit
       run: |
-        echo "Listing changed files between ${{ github.event.before }} and ${{ github.sha }}:"
-        git diff --name-only ${{ github.event.before }} ${{ github.sha }}
-        git diff --name-only ${{ github.event.before }} ${{ github.sha }} > changed_files.txt  # Save the list to a file
-        cat changed_files.txt  # Debug output to check files
+        echo "Listing changed files:"
+        git diff --name-only ${{ github.event.before }} ${{ github.sha }} > changed_files.txt
+        cat changed_files.txt
 
     - name: Prepare files for release
       run: |
         echo "Preparing files for release..."
         mkdir -p release_files  # Ensure the release_files directory exists
-
-        # Copy the changed files to the release_files directory
+        # Copy each file listed in changed_files.txt to the release directory
         while IFS= read -r file; do
           echo "Copying file: $file"
-          if [ -f "$file" ]; then  # Only copy files (not directories)
+          if [ -f "$file" ]; then  # Only copy files, not directories
             cp --parents "$file" release_files/
           fi
         done < changed_files.txt
@@ -42,9 +43,11 @@ jobs:
         echo "Files in the release directory:"
         ls -R release_files/  # List files in the release directory for verification
 
-    - name: Create Release
+    - name: Create or Update Release
       uses: softprops/action-gh-release@v1
       with:
-        files: release_files/**/*
+        tag_name: ${{ env.VERSION }}
+        files: release_files/**/* 
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
