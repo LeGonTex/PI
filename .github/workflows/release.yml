@@ -20,12 +20,6 @@ jobs:
         echo "TAG_NAME=v$(date +'%Y%m%d%H%M%S')" >> $GITHUB_ENV  # Use a unique version for each commit, or customize as needed
         echo "VERSION=${TAG_NAME}" >> $GITHUB_ENV  # Version is based on a dynamic tag, can be customized
 
-    - name: List files changed in the commit
-      run: |
-        echo "Listing changed files:"
-        git diff --name-only ${{ github.event.before }} ${{ github.sha }} > changed_files.txt
-        cat changed_files.txt
-
     - name: Prepare files for release
       run: |
         echo "Preparing files for release..."
