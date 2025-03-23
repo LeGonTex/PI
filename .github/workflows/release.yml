@@ -1,9 +1,10 @@
 name: Create Release
 
+# Trigger the workflow on tag push
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*'  # Trigger for tags starting with 'v' (e.g., v1.0.0)
 
 jobs:
   release:
@@ -19,23 +20,32 @@ jobs:
 
     - name: List files changed in the commit
       run: |
-        echo "Changed files in this commit:"
-        git diff --name-only ${{ github.event.before }} ${{ github.sha }} > files.txt
-        cat files.txt
+        echo "Listing changed files between ${{ github.event.before }} and ${{ github.sha }}:"
+        git diff --name-only ${{ github.event.before }} ${{ github.sha }}
+        git diff --name-only ${{ github.event.before }} ${{ github.sha }} > changed_files.txt  # Save the list to a file
+        cat changed_files.txt  # Debug output to check files
 
     - name: Prepare files for release
       run: |
-        # Create a directory to collect files that were changed
-        mkdir release_files
+        echo "Preparing files for release..."
+        mkdir -p release_files  # Ensure the release_files directory exists
 
-        # Copy each changed file to the release_files directory
+        # Copy the changed files to the release_files directory
         while IFS= read -r file; do
-          cp "$file" release_files/
-        done < files.txt
+          echo "Copying file: $file"
+          if [ -f "$file" ]; then  # Only copy files (not directories)
+            cp --parents "$file" release_files/
+          fi
+        done < changed_files.txt
+
+    - name: Verify files to be released
+      run: |
+        echo "Files in the release directory:"
+        ls -R release_files/  # List files in the release directory for verification
 
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
-        files: release_files/* 
+        files: release_files/**/*  # Use the files collected in the previous step
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
