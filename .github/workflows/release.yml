@@ -1,35 +1,26 @@
-name: Update Release Tag
+name: Create Release
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   release:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout the repository
+      - name: Checkout Code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      - name: Get the latest version tag
-        id: get_version
+      - name: Get Latest Tag
+        id: version
         run: |
           LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-          echo "Latest tag: $LATEST_TAG"
           VERSION=$(echo $LATEST_TAG | awk -F. '{print $1"."$2"."$3+1}')
-          echo "New version: $VERSION"
           echo "NEW_VERSION=$VERSION" >> $GITHUB_ENV
 
-      - name: Create or update tag
-        run: |
-          git tag -f $NEW_VERSION
-          git push origin $NEW_VERSION --force  # Overwrite the existing tag
-
-      - name: Create or Update GitHub Release
+      - name: Create Tag & Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ env.NEW_VERSION }}
