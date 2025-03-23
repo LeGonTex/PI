@@ -1,2 +1,2 @@
 # PI
-Projeto Integrador
+Repositorio destinado ao desenvolvimento do projeto integrador
