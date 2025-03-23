@@ -30,18 +30,16 @@ jobs:
         fi
         cat changed_files.txt
       
-    - name: Prepare files for release
+    - name: List files changed in the commit
       run: |
-        echo "Preparing files for release..."
-        mkdir -p release_files  # Ensure the release_files directory exists
-        # Copy each file listed in changed_files.txt to the release directory
-        while IFS= read -r file; do
-          echo "Copying file: $file"
-          if [ -f "$file" ]; then  # Only copy files, not directories
-            cp --parents "$file" release_files/
-          fi
-        done < changed_files.txt
-
+        if [ -z "${{ github.event.before }}" ] || ! git cat-file -e ${{ github.event.before }}^{commit} 2>/dev/null; then
+        echo "No previous commit found or invalid reference. Listing all files."
+        git ls-files > changed_files.txt  # Lists all files in repo
+        else
+          git diff --name-only ${{ github.event.before }} ${{ github.sha }} > changed_files.txt
+        fi
+        cat changed_files.txt
+      
     - name: Verify files to be released
       run: |
         echo "Files in the release directory:"
