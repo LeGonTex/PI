@@ -3,7 +3,7 @@ name: Create Release
 on:
   push:
     tags:
-      - 'v*' 
+      - 'v*'
 
 jobs:
   release:
@@ -17,10 +17,25 @@ jobs:
       id: version
       run: echo "VERSION=$(echo ${GITHUB_REF} | sed 's/refs\/tags\///')" >> $GITHUB_ENV
 
+    - name: List files changed in the commit
+      run: |
+        echo "Changed files in this commit:"
+        git diff --name-only ${{ github.event.before }} ${{ github.sha }} > files.txt
+        cat files.txt
+
+    - name: Prepare files for release
+      run: |
+        # Create a directory to collect files that were changed
+        mkdir release_files
+
+        # Copy each changed file to the release_files directory
+        while IFS= read -r file; do
+          cp "$file" release_files/
+        done < files.txt
+
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
-        files: |
-          ./build/*  # Add the files you want to include in the release (e.g., build files, binaries)
+        files: release_files/* 
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
