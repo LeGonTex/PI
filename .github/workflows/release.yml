@@ -1,55 +1,38 @@
-name: Create or Update Release
+name: Update Release Tag
 
 on:
   push:
     branches:
-      - 'main'
+      - main
 
 jobs:
   release:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout the repository
-      uses: actions/checkout@v2
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-    - name: Get the current commit hash and version
-      id: version
-      run: |
-        echo "COMMIT_SHA=${GITHUB_SHA}" >> $GITHUB_ENV
-        echo "TAG_NAME=v$(date +'%Y%m%d%H%M%S')" >> $GITHUB_ENV  # Use a unique version for each commit, or customize as needed
-        echo "VERSION=${TAG_NAME}" >> $GITHUB_ENV  # Version is based on a dynamic tag, can be customized
+      - name: Get the latest version tag
+        id: get_version
+        run: |
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "Latest tag: $LATEST_TAG"
+          VERSION=$(echo $LATEST_TAG | awk -F. '{print $1"."$2"."$3+1}')
+          echo "New version: $VERSION"
+          echo "NEW_VERSION=$VERSION" >> $GITHUB_ENV
 
-    - name: List files changed in the commit
-      run: |
-        if [ -z "${{ github.event.before }}" ] || ! git rev-parse ${{ github.event.before }} >/dev/null 2>&1; then
-        echo "No previous commit found. Listing all files."
-        git ls-files > changed_files.txt  # List all files for the first commit
-        else
-          git diff --name-only ${{ github.event.before }} ${{ github.sha }} > changed_files.txt
-        fi
-        cat changed_files.txt
-      
-    - name: List files changed in the commit
-      run: |
-        if [ -z "${{ github.event.before }}" ] || ! git cat-file -e ${{ github.event.before }}^{commit} 2>/dev/null; then
-        echo "No previous commit found or invalid reference. Listing all files."
-        git ls-files > changed_files.txt  # Lists all files in repo
-        else
-          git diff --name-only ${{ github.event.before }} ${{ github.sha }} > changed_files.txt
-        fi
-        cat changed_files.txt
-      
-    - name: Verify files to be released
-      run: |
-        echo "Files in the release directory:"
-        ls -R release_files/  # List files in the release directory for verification
+      - name: Create or update tag
+        run: |
+          git tag -f $NEW_VERSION
+          git push origin $NEW_VERSION --force  # Overwrite the existing tag
 
-    - name: Create or Update Release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: ${{ env.VERSION }}
-        files: release_files/**/* 
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.NEW_VERSION }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
