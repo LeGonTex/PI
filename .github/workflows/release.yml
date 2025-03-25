@@ -23,7 +23,7 @@ jobs:
       - name: Create Tag & Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ env.NEW_VERSION }}
+          tag_name: ${{ env.NEW_VERSION }} # asdas
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
